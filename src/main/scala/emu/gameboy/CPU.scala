@@ -60,7 +60,6 @@ class CPU private[gameboy](val gameboy:Gameboy)
     def setSubtractFlag:Unit = F |= 64
     def setZeroFlag:Unit =     F |= 128
 
-
     /**
     * Memory accessor
     */
