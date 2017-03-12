@@ -6,12 +6,12 @@ import scala.util.{Random}
 * Represents the memory of a Gameboy
 * @param bytes Number of bytes to allocate
 * @param start Start of Memory
-* @param length Number of bytes in Memory
+* @param until Address+1 of last byte
 */
-class Memory(val bytes:Array[Byte], val start:Int, val length:Int)
+class Memory(val bytes:Array[Byte], val start:Int, val until:Int)
 {
     // Checks args
-    require(start+length <= bytes.length, "Out of bounds")
+    require(until <= bytes.length, "Out of bounds")
 
     /**
     * Acquires byte at specified index
@@ -31,30 +31,21 @@ class Memory(val bytes:Array[Byte], val start:Int, val length:Int)
     /**
     * @return slice of this Memory object.  Points to same memory allocation.  Side effects apply.
     * @param start Start of memory object relative to current.
-    * @param length Length of new Memory object.
+    * @param until Address+1 of last byte
     */
-    def sub(start:Int, length:Int):Memory = new Memory(bytes, start+this.start, length)
+    def sub(start:Int, until:Int):Memory = new Memory(bytes, start+this.start, until)
 
     /**
     * Constructs a hexidecimal String of every byte in Memory
     */
     def toHexString:String = bytes
         .view
-        .slice(start, start+length)
+        .slice(start, until)
         .map{_.toInt}
         .map{_ & 0xFF}
         .map{_.toHexString}
-        .map{padHexByte}
+        .map{FormatUtil.padHexByte}
         .mkString(" ")
-
-
-    /**
-    * Pads a byte hex string with a zero at start
-    * if its length is 1.  Otherwise, returns original
-    */
-    private def padHexByte(str:String):String =
-        if(str.length == 1) "0" + str
-        else str
 }
 
 
@@ -72,6 +63,6 @@ object Memory
     {
         val allocation:Array[Byte] = Array.fill(numBytes)(0)
         rand.nextBytes(allocation)
-        new Memory(allocation, 0, allocation.length)
+        new Memory(allocation, 0, numBytes)
     }
 }

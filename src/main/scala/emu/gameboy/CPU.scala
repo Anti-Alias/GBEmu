@@ -59,4 +59,57 @@ class CPU private[gameboy](val gameboy:Gameboy)
     def setHalfCarry:Unit =    F |= 32
     def setSubtractFlag:Unit = F |= 64
     def setZeroFlag:Unit =     F |= 128
+
+    /**
+    * Appends a hex register value
+    */
+    private def appendRegister(builder:StringBuilder, name:String, value:Int, comma:Boolean = true):Unit =
+    {
+        builder
+            .append("\t\"").append(name).append("\":\"")
+            .append(FormatUtil.padHexByte(value.toHexString))
+            .append("\"")
+        if(comma) builder.append(',')
+        builder.append('\n')
+    }
+
+    /**
+    * Appends a hex register value
+    */
+    private def appendRegister16(builder:StringBuilder, name:String, value:Int, comma:Boolean = true):Unit =
+    {
+        builder
+            .append("\t\"").append(name).append("\":\"")
+            .append(FormatUtil.padHexShort(value.toHexString))
+            .append("\"")
+        if(comma) builder.append(',')
+        builder.append('\n')
+    }
+
+
+    /**
+    * String representation of the current state of the CPU
+    */
+    override def toString:String =
+    {
+        // Makes StringBuilder
+        val builder = new StringBuilder()
+
+        // Builds string
+        builder.append("{\n")
+        appendRegister(builder, "A", A)
+        appendRegister(builder, "F", F)
+        appendRegister(builder, "B", B)
+        appendRegister(builder, "C", C)
+        appendRegister(builder, "D", D)
+        appendRegister(builder, "E", E)
+        appendRegister(builder, "H", H)
+        appendRegister(builder, "L", L)
+        appendRegister16(builder, "SP", SP)
+        appendRegister16(builder, "PC", PC)
+        builder.append("}")
+
+        // Returns built String
+        builder.toString
+    }
 }
