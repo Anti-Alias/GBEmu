@@ -59,9 +59,4 @@ class CPU private[gameboy](val gameboy:Gameboy)
     def setHalfCarry:Unit =    F |= 32
     def setSubtractFlag:Unit = F |= 64
     def setZeroFlag:Unit =     F |= 128
-
-    /**
-    * Memory accessor
-    */
-    def memory:Memory = gameboy.memory
 }
