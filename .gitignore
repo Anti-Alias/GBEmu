@@ -5,4 +5,5 @@ target
 .cache-main
 .cache-tests
 .classpath
+.project
 GBCPUman.pdf
