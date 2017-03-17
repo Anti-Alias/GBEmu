@@ -1,3 +1,8 @@
 project
 target
 /bin/
+.DS_Store
+.cache-main
+.cache-tests
+.classpath
+GBCPUman.pdf
