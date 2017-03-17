@@ -1,4 +1,7 @@
 package emu.gameboy
+import scala.annotation.{switch}
+import FormatUtil.{padHexByte, padHexShort}
+import play.api.libs.json._
 
 /**
 * Represents the CPU of Gameboy
@@ -31,6 +34,14 @@ class CPU private[gameboy](val gameboy:Gameboy)
     def PC:Int = _PC & 0xFFFF
 
     /**
+    * Register pair getter
+    */
+    def BC:Int = (B << 8) + C
+    def DE:Int = (D << 8) + E
+    def HL:Int = (H << 8) + L
+
+
+    /**
     * Register setter
     */
     def A_=(n:Int):Unit = _A = n
@@ -45,71 +56,300 @@ class CPU private[gameboy](val gameboy:Gameboy)
     def PC_=(n:Int):Unit = _PC = n
 
     /**
+    * Register pair setter
+    */
+    def BC_=(n:Int):Unit =
+    {
+        val left:Int = (n >>> 8) & 0xFF
+        val right:Int = n & 0xFF
+        B = left
+        C = right
+    }
+    def DE_=(n:Int):Unit =
+    {
+        val left:Int = (n >>> 8) & 0xFF
+        val right:Int = n & 0xFF
+        D = left
+        E = right
+    }
+    def HL_=(n:Int):Unit =
+    {
+        val left:Int = (n >>> 8) & 0xFF
+        val right:Int = n & 0xFF
+        H = left
+        L = right
+    }
+
+    /**
     * Flag helper functions
     */
-    def carryFlag:Boolean =     (F & 16) != 0
-    def halfCarryFlag:Boolean = (F & 32) != 0
-    def subtractFlag:Boolean =  (F & 64) != 0
-    def zeroFlag:Boolean =      (F & 128) != 0
+    def flagCarry:Boolean =     (F & 16) != 0
+    def flagHalfCarry:Boolean = (F & 32) != 0
+    def flagSubtract:Boolean =  (F & 64) != 0
+    def flagZero:Boolean =      (F & 128) != 0
 
     /**
     * FLag setters
     */
-    def setCarry:Unit =        F |= 16
-    def setHalfCarry:Unit =    F |= 32
-    def setSubtractFlag:Unit = F |= 64
-    def setZeroFlag:Unit =     F |= 128
+    def setFlagCarry():Unit =     F |= 16
+    def setFlagHalfCarry():Unit = F |= 32
+    def setFlagSubtract():Unit =  F |= 64
+    def setFlagZero():Unit =      F |= 128
 
     /**
-    * Appends a hex register value
+    * Flag unsetters
     */
-    private def appendRegister(builder:StringBuilder, name:String, value:Int, comma:Boolean = true):Unit =
+    def unsetFlagCarry():Unit =     F &= 239
+    def unsetFlagHalfCarry():Unit = F &= 223
+    def unsetFlagSubtract():Unit =  F &= 191
+    def unsetFlagZero():Unit =      F &= 127
+
+    /**
+    * Sets carry flag to specified value
+    */
+    def setFlagCarry(value:Boolean):Unit =
+        if(value) setFlagCarry
+        else unsetFlagCarry
+
+    def setFlagHalfCarry(value:Boolean):Unit =
+        if(value) setFlagHalfCarry
+        else unsetFlagHalfCarry
+
+    def setFlagSubtract(value:Boolean):Unit =
+        if(value) setFlagSubtract
+        else unsetFlagSubtract
+
+    def setFlagZero(value:Boolean):Unit =
+        if(value) setFlagZero
+        else unsetFlagZero
+
+    /**
+    * Determines if computation from state A to state B resulted in
+    * a half-carry.
+    */
+    def isHalfCarry(a:Int, b:Int):Boolean =
     {
-        builder
-            .append("\t\"").append(name).append("\":\"")
-            .append(FormatUtil.padHexByte(value.toHexString))
-            .append("\"")
-        if(comma) builder.append(',')
-        builder.append('\n')
+        val bit3A = (a >>> 3) & 0x1
+        val bit3B = (a >>> 3) & 0x1
+        bit3A != bit3B
     }
 
     /**
-    * Appends a hex register value
+    * Determines if computation from state A to state B resulted in
+    * a carry.
     */
-    private def appendRegister16(builder:StringBuilder, name:String, value:Int, comma:Boolean = true):Unit =
+    def isCarry(a:Int, b:Int):Boolean =
     {
-        builder
-            .append("\t\"").append(name).append("\":\"")
-            .append(FormatUtil.padHexShort(value.toHexString))
-            .append("\"")
-        if(comma) builder.append(',')
-        builder.append('\n')
+        val bit7A = (a >>> 7) & 0x1
+        val bit7B = (b >>> 7) & 0x1
+        bit7A != bit7B
     }
 
+    /**
+    * JSON representation of the CPU
+    */
+    def toJSON:JsObject = Json.obj(
+        "registers" -> Json.obj(
+            "A" -> padHexByte(A.toHexString),
+            "F" -> padHexByte(F.toHexString),
+            "B" -> padHexByte(B.toHexString),
+            "C" -> padHexByte(C.toHexString),
+            "D" -> padHexByte(D.toHexString),
+            "E" -> padHexByte(E.toHexString),
+            "H" -> padHexByte(H.toHexString),
+            "L" -> padHexByte(L.toHexString),
+            "SP" -> padHexShort(SP.toHexString),
+            "PC" -> padHexShort(PC.toHexString)
+        ),
+        "flags" -> Json.obj(
+            "Z" -> flagZero,
+            "N" -> flagSubtract,
+            "H" -> flagHalfCarry,
+            "C" -> flagCarry
+        )
+    )
 
     /**
-    * String representation of the current state of the CPU
+    * String representation of the current state of the CPU as JSON.
     */
-    override def toString:String =
+    override def toString:String = toJSON.toString
+
+    /**
+    * Represents CPU as a pretty-printed JSON String.
+    */
+    def toPrettyString:String = Json.prettyPrint(toJSON)
+
+    /**
+    * 0x00
+    */
+    def op_NOP():Unit = {}
+
+    /**
+    * 0x01
+    */
+    def op_LD_BC_d16(num:Int):Unit = BC = num
+
+    /**
+    * 0x02
+    */
+    def op_LD_mem_BC_A():Unit = gameboy.memSet8(BC, A)
+
+    /**
+    * 0x03
+    */
+    def op_INC_BC():Unit = BC += 1
+
+    /**
+    * 0x04
+    */
+    def op_INC_B():Unit =
     {
-        // Makes StringBuilder
-        val builder = new StringBuilder()
+        val old:Int = B
+        B += 1
+        setFlagZero(B == 0)
+        unsetFlagSubtract
+        setFlagHalfCarry(isCarry(old, B))
+    }
 
-        // Builds string
-        builder.append("{\n")
-        appendRegister(builder, "A", A)
-        appendRegister(builder, "F", F)
-        appendRegister(builder, "B", B)
-        appendRegister(builder, "C", C)
-        appendRegister(builder, "D", D)
-        appendRegister(builder, "E", E)
-        appendRegister(builder, "H", H)
-        appendRegister(builder, "L", L)
-        appendRegister16(builder, "SP", SP)
-        appendRegister16(builder, "PC", PC)
-        builder.append("}")
+    /**
+    * 0x05
+    */
+    def op_DEC_B():Unit =
+    {
+        val old:Int = B
+        B -= 1
+        setFlagZero(B == 0)
+        setFlagSubtract
+        setFlagHalfCarry(isHalfCarry(old, B))
+    }
 
-        // Returns built String
-        builder.toString
+    /**
+    * 0x06
+    */
+    def op_LD_B_d8(num:Int):Unit = B == num
+
+    /**
+    * 0x07
+    */
+    def op_RLCA():Unit = throw new RuntimeException("RLCA not implemented")
+
+    /**
+    * 0x08
+    */
+    def op_LD_mem_a16_SP(num:Int):Unit = gameboy.memSet16(num, SP)
+
+    /**
+    * 0x09
+    */
+    def op_ADD_HL_BC():Unit =
+    {
+        val old:Int = HL
+        HL += BC
+        unsetFlagSubtract
+        setFlagHalfCarry(isHalfCarry(old, HL))
+        setFlagCarry(isCarry(old, HL))
+    }
+
+    /**
+    * 0x0A
+    */
+    def op_LD_A_mem_BC():Unit = A = gameboy.memGet8(BC)
+
+    /**
+    * 0x0B
+    */
+    def op_DEC_BC():Unit = BC -= 1
+
+    /**
+    * 0x0C
+    */
+    def op_INC_C():Unit =
+    {
+        val old:Int = C
+        C += 1
+        if(C == 0) setFlagZero
+        unsetFlagSubtract
+        setFlagHalfCarry(isHalfCarry(old, C))
+    }
+
+    /**
+    * 0x0D
+    */
+    def op_DEC_C():Unit =
+    {
+        val old:Int = C
+        C += 1
+        if(C == 0) setFlagZero
+        setFlagSubtract
+        setFlagHalfCarry(isHalfCarry(old, C))
+    }
+
+    /**
+    * 0x0E
+    */
+    def op_LD_C_d8(num:Int):Unit = C = num
+
+    /*
+    * 0x0fF
+    */
+    def op_LD_DE_d16(num:Int):Unit = DE = num
+
+    /**
+    * 0x
+    */
+    def op_RRCA():Unit = throw new RuntimeException("RRCA not implemented")
+
+    /**
+    * Reads next 8 bits from PC.
+    * Advances PC past those bits.
+    */
+    def read8():Int =
+    {
+        val value:Int = gameboy.memGet8(PC)
+        PC += 1
+        value
+    }
+
+    /**
+    * Reads next 16 bits from PC.
+    * Advances PC past those bits
+    */
+    def read16():Int =
+    {
+        val right:Int = gameboy.memGet8(PC)
+        val left:Int = gameboy.memGet8(PC+1)
+        PC += 2
+        (left << 8) + right
+    }
+
+    /**
+    * Runs next instruction
+    */
+    def execute():Unit =
+    {
+        // Reads next opcode
+        val opcode:Int = read8()
+
+        // Interprests opcode
+        (opcode: @switch) match
+        {
+            case 0x00 => op_NOP()
+            case 0x01 => op_LD_BC_d16(read16())
+            case 0x02 => op_LD_mem_BC_A()
+            case 0x03 => op_INC_BC()
+            case 0x04 => op_INC_B()
+            case 0x05 => op_DEC_B()
+            case 0x06 => op_LD_B_d8(read8())
+            case 0x07 => op_RLCA()
+            case 0x08 => op_LD_mem_a16_SP(read16())
+            case 0x09 => op_ADD_HL_BC()
+            case 0x0A => op_LD_A_mem_BC()
+            case 0x0B => op_DEC_BC()
+            case 0x0C => op_INC_C()
+            case 0x0D => op_DEC_C()
+            case 0x0E => op_LD_C_d8(read8())
+            case 0x0F => op_RRCA()
+            case _ => throw new RuntimeException("Invalid opcode " + opcode.toHexString)
+        }
     }
 }

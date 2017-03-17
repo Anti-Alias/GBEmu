@@ -3,16 +3,29 @@ import emu.gameboy.{Gameboy, CPU, Memory}
 /**
 * Tests running a Gameboy
 */
-object Test extends App
+object Test
 {
-    val gb = Gameboy.create()   // Makes Gameboy
-    val cpu = gb.cpu
-    cpu.A = 0xFFF0
-    for(i <- 0 until 32)
+    /**
+    * Main method
+    */
+    def main(args:Array[String])
     {
-        println(cpu)
-        cpu.A += 1
+        val gb = Gameboy.create()   // Makes Gameboy
+        val cpu = gb.cpu            // Gets CPU
+
+        println(cpu.toPrettyString)
+
+        separate()
+
+        cpu.setFlagSubtract()
+        println(cpu.toPrettyString)
+
+        // Finishes
+        println("Done!")
     }
 
-    println("Done!")            // Finishes emulation
+    /**
+    * Makes it easier to separate lines
+    */
+    private def separate():Unit = println("------------------------------------------------------------")
 }
