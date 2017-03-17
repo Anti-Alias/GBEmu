@@ -1,9 +1,10 @@
 project
 target
+GBCPUman.pdf
 /bin/
 .DS_Store
 .cache-main
 .cache-tests
 .classpath
 .project
-GBCPUman.pdf
+.settings
