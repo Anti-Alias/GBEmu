@@ -1,31 +1,48 @@
 import emu.gameboy.{Gameboy, CPU, Memory}
+import org.scalatest._
 
 /**
 * Tests running a Gameboy
 */
-object Test
+class Test extends FunSuite
 {
-    /**
-    * Main method
-    */
-    def main(args:Array[String])
-    {
-        val gb = Gameboy.create()   // Makes Gameboy
-        val cpu = gb.cpu            // Gets CPU
-
-        println(cpu.toPrettyString)
-
-        separate()
-
-        cpu.setFlagSubtract()
-        println(cpu.toPrettyString)
-
-        // Finishes
-        println("Done!")
-    }
-
-    /**
-    * Makes it easier to separate lines
-    */
-    private def separate():Unit = println("------------------------------------------------------------")
+  test("Decrement B1")
+  {
+    val gb = new Gameboy()
+    val cpu = gb.cpu
+    cpu.B = 2
+    
+    cpu.op_DEC_B()
+    assert(!cpu.flagZero && cpu.flagSubtract && !cpu.flagCarry && !cpu.flagHalfCarry)
+  }
+  
+  test("Decrement B2")
+  {
+    val gb = new Gameboy()
+    val cpu = gb.cpu
+    cpu.B = 1
+    
+    cpu.op_DEC_B()
+    assert(cpu.flagZero && cpu.flagSubtract && !cpu.flagCarry && !cpu.flagHalfCarry)
+  }
+  
+  test("Decrement C1")
+  {
+    val gb = new Gameboy()
+    val cpu = gb.cpu
+    cpu.C = 2
+    
+    cpu.op_DEC_C()
+    assert(!cpu.flagZero && cpu.flagSubtract && !cpu.flagCarry && !cpu.flagHalfCarry)
+  }
+  
+  test("Decrement C2")
+  {
+    val gb = new Gameboy()
+    val cpu = gb.cpu
+    cpu.C = 1
+    
+    cpu.op_DEC_C()
+    assert(cpu.flagZero && cpu.flagSubtract && !cpu.flagCarry && !cpu.flagHalfCarry)
+  }
 }

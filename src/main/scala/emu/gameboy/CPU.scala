@@ -278,7 +278,7 @@ class CPU private[gameboy](val gameboy:Gameboy)
     def op_DEC_C():Unit =
     {
         val old:Int = C
-        C += 1
+        C -= 1
         if(C == 0) setFlagZero
         setFlagSubtract
         setFlagHalfCarry(isHalfCarry(old, C))
@@ -289,15 +289,52 @@ class CPU private[gameboy](val gameboy:Gameboy)
     */
     def op_LD_C_d8(num:Int):Unit = C = num
 
-    /*
-    * 0x0fF
+    /**
+    * 0x0F
     */
+    def op_RRCA():Unit = notImp()
+    
+    /**
+     * 0x10
+     */
+    def op_STOP():Unit = notImp()
+    
+    /**
+     * 0x11
+     */
     def op_LD_DE_d16(num:Int):Unit = DE = num
+    
+    /**
+     * 0x12
+     */
+    def op_LD_mem_DE_A():Unit = gameboy.memSet8(DE, A)
+    
+    /**
+     * 0x13
+     */
+    def op_INC_DE():Unit = DE += 1
+    
+    /**
+     * 0x14
+     */
+    def op_INC_D():Unit = D += 1
 
     /**
-    * 0x
-    */
-    def op_RRCA():Unit = throw new RuntimeException("RRCA not implemented")
+     * 0x15
+     */
+    def op_DEC_D():Unit =
+    {
+        val old:Int = D
+        D -= 1
+        setFlagZero(D == 0)
+        setFlagSubtract
+        setFlagHalfCarry(isHalfCarry(old, D))
+    }
+    
+    /**
+     * Convenience method used to denote a method that is not implemented
+     */
+    def notImp():Unit = throw new RuntimeException("Not implemented")
 
     /**
     * Reads next 8 bits from PC.
